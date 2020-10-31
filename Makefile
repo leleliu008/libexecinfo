@@ -1,64 +1,47 @@
-# Copyright (c) 2003 Maxim Sobolev <sobomax@FreeBSD.org>
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# $Id: Makefile,v 1.3 2004/07/19 05:19:55 sobomax Exp $
-#
-# Linux Makefile by Matt Smith <mcs@darkregion.net>, 2011/01/04
-
-CC ?= clang
+CC ?= cc
 AR ?= ar
-EXECINFO_CFLAGS=$(CFLAGS) -O2 -pipe -fno-strict-aliasing -std=gnu99 -fstack-protector -c
-EXECINFO_LDFLAGS=$(LDFLAGS)
 
-INCLUDEDIR ?= /usr/include
-LIBDIR ?= /usr/lib
+ARFLAGS = rs
+override LDFLAGS += -shared
 
-all: libexecinfo.a libexecinfo.so.1
+INSTALL_SONAME_FLAG=soname
+#INSTALL_SONAME_FLAG=install_name
 
-libexecinfo.a:
-	$(CC) $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) stacktraverse.c
-	$(CC) $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) execinfo.c
-	$(AR) rcs libexecinfo.a stacktraverse.o execinfo.o
+PREFIX  = /usr/local
 
-libexecinfo.so.1:
-	$(CC) -fpic -DPIC $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) stacktraverse.c -o stacktraverse.So
-	$(CC) -fpic -DPIC $(EXECINFO_CFLAGS) $(EXECINFO_LDFLAGS) execinfo.c -o execinfo.So
-	$(CC) -shared -Wl,-soname,libexecinfo.so.1 -o libexecinfo.so.1 stacktraverse.So execinfo.So
+INC_DIR = $(PREFIX)/include
+LIB_DIR = $(PREFIX)/lib
 
-install: libexecinfo.a libexecinfo.so.1
-	install -d $(DESTDIR)$(INCLUDEDIR)
-	install -m 755 execinfo.h       $(DESTDIR)$(INCLUDEDIR)
-	install -m 755 stacktraverse.h  $(DESTDIR)$(INCLUDEDIR)
-	
-	install -d $(DESTDIR)$(LIBDIR)
-	install -m 755 libexecinfo.a    $(DESTDIR)$(LIBDIR)
-	install -m 755 libexecinfo.so.1 $(DESTDIR)$(LIBDIR)
-	
-	ln -s /usr/lib/libexecinfo.so.1 $(DESTDIR)$(LIBDIR)/libexecinfo.so
+LIB_NAME=libexecinfo
+
+STATIC_LIB_SUFFIX=.a
+SHARED_LIB_SUFFIX=.so
+
+STATIC_LIB_FILE_NAME=$(LIB_NAME)$(STATIC_LIB_SUFFIX)
+SHARED_LIB_FILE_NAME=$(LIB_NAME)$(SHARED_LIB_SUFFIX)
+
+OBJS = $(patsubst %.c, %.o, $(wildcard *.c))
+
+
+build: $(STATIC_LIB_FILE_NAME) $(SHARED_LIB_FILE_NAME)
+
+$(STATIC_LIB_FILE_NAME): $(OBJS)
+	$(AR) $(ARFLAGS) $@ $^
+
+$(SHARED_LIB_FILE_NAME): $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -Wl,-$(INSTALL_SONAME_FLAG),$@ -o $@ $^
+
+install: build
+	install -d                     $(DEST_DIR)$(INC_DIR)
+	install -m 644 execinfo.h      $(DEST_DIR)$(INC_DIR)
+	install -m 644 stacktraverse.h $(DEST_DIR)$(INC_DIR)
+	install -d                             $(DEST_DIR)$(LIB_DIR)
+	install -m 644 $(STATIC_LIB_FILE_NAME) $(DEST_DIR)$(LIB_DIR)
+	install -m 755 $(SHARED_LIB_FILE_NAME) $(DEST_DIR)$(LIB_DIR)
+
 clean:
-	rm -rf *.o *.So *.a *.so *.so.1
+	rm -rf *.o *.a *.so *.dylib
 
-.PHONY: all
-.PHONY: install
+distclean: clean
+
 .PHONY: clean
