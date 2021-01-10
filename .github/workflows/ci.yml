@@ -1,0 +1,44 @@
+name: ci workflow
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    # https://docs.github.com/en/free-pro-team@latest/actions/reference/specifications-for-github-hosted-runners#supported-runners-and-hardware-resources
+    strategy:
+      matrix:
+        os: [ubuntu-16.04, ubuntu-18.04, ubuntu-20.04, macos-11.0, macos-10.15]
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: export -p
+      run:  export -p
+    
+    - name: brew update
+      run:  brew update
+
+    - name: brew install 
+      run:  brew install tree
+
+    - name: install ndk-pkg
+      run: |
+        curl -LO https://raw.githubusercontent.com/leleliu008/ndk-pkg/master/bin/ndk-pkg
+        chmod u+x ndk-pkg
+        echo "$PWD" >> $GITHUB_PATH
+
+    - name: set ANDROID_NDK_HOME environment variable
+      run:  echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
+
+    - name: ndk-pkg --version
+      run:  ndk-pkg --version
+
+    - name: ndk-pkg update
+      run:  ndk-pkg update
+
+    - name: ndk-pkg install libexecinfo
+      run:  ndk-pkg install libexecinfo
