@@ -16,29 +16,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     steps:
-    - name: export -p
-      run:  export -p
+    - run: export -p
     
-    - name: brew update
-      run:  brew update
+    - run: brew update
+    
+    - run: brew tap leleliu008/fpliu
 
-    - name: brew install 
-      run:  brew install tree
+    - run: brew install ndk-pkg tree
 
-    - name: install ndk-pkg
-      run: |
-        curl -LO https://raw.githubusercontent.com/leleliu008/ndk-pkg/master/bin/ndk-pkg
-        chmod u+x ndk-pkg
-        echo "$PWD" >> $GITHUB_PATH
+    - run: ndk-pkg --version
 
-    - name: set ANDROID_NDK_HOME environment variable
-      run:  echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle" >> $GITHUB_ENV
+    - run: ndk-pkg update
 
-    - name: ndk-pkg --version
-      run:  ndk-pkg --version
-
-    - name: ndk-pkg update
-      run:  ndk-pkg update
-
-    - name: ndk-pkg install libexecinfo
-      run:  ndk-pkg install libexecinfo
+    - run: ndk-pkg install libexecinfo -v
